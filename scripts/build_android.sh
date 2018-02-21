@@ -96,8 +96,12 @@ for arg in ${CMAKE_ARGS[@]};do
     USE_GCC=true
   fi
 done
+
 if $USE_GCC;then
   CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS=-s")
+else
+  CMAKE_ARGS+=("-DCMAKE_EXE_LINKER_FLAGS=-s")
+  CMAKE_ARGS+=("-DCMAKE_MODULE_LINKER_FLAGS=-s")
 fi
 
 cmake "$CAFFE2_ROOT" \
