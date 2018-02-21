@@ -99,6 +99,11 @@ done
 
 if $USE_GCC;then
   CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS=-s")
+  for arg in ${CMAKE_ARGS[@]}; do
+    if [ $arg == "-DUSE_MOBILE_OPENGL=ON" ];then
+      CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS=-s -mfp16-format=ieee -mfpu=neon-fp16")
+    fi
+  done
 else
   CMAKE_ARGS+=("-DCMAKE_EXE_LINKER_FLAGS=-s")
   CMAKE_ARGS+=("-DCMAKE_MODULE_LINKER_FLAGS=-s")
