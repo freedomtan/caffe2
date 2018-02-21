@@ -173,8 +173,9 @@ endfunction()
 ##############################################################################
 # Helper function to add whole_archive flag around a library.
 function(caffe_add_whole_archive_flag lib output_var)
-  if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(${output_var} -Wl,-force_load,$<TARGET_FILE:${lib}> PARENT_SCOPE)
+  if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang") AND (IOS))
+      # for clang for iOS (or say Apple's ld64)
+      set(${output_var} -Wl,-force_load,$<TARGET_FILE:${lib}> PARENT_SCOPE)
   elseif(MSVC)
     # In MSVC, we will add whole archive in default.
     set(${output_var} -WHOLEARCHIVE:$<TARGET_FILE:${lib}> PARENT_SCOPE)
