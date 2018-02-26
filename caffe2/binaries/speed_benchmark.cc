@@ -23,6 +23,10 @@
 #include "caffe2/utils/proto_utils.h"
 #include "caffe2/utils/string_utils.h"
 
+#if CAFFE2_MOBILE && (CAFFE2_ANDROID || CAFFE2_IOS)
+#include "caffe2/mobile/contrib/opengl/core/rewrite_net.h"
+#endif
+
 CAFFE2_DEFINE_string(net, "", "The given net to benchmark.");
 CAFFE2_DEFINE_string(
     init_net,
@@ -81,9 +85,9 @@ int main(int argc, char** argv) {
   unique_ptr<caffe2::Workspace> workspace(new caffe2::Workspace());
 
   // Run initialization network.
-  caffe2::NetDef net_def;
-  CAFFE_ENFORCE(ReadProtoFromFile(caffe2::FLAGS_init_net, &net_def));
-  CAFFE_ENFORCE(workspace->RunNetOnce(net_def));
+  caffe2::NetDef init_net_def;
+  CAFFE_ENFORCE(ReadProtoFromFile(caffe2::FLAGS_init_net, &init_net_def));
+  CAFFE_ENFORCE(workspace->RunNetOnce(init_net_def));
 
   // Load input.
   if (caffe2::FLAGS_input.size()) {
@@ -124,15 +128,33 @@ int main(int argc, char** argv) {
     }
   }
 
+  caffe2::NetDef net_def;
   // Run main network.
   CAFFE_ENFORCE(ReadProtoFromFile(caffe2::FLAGS_net, &net_def));
   // force changing engine and algo
   if (caffe2::FLAGS_force_engine) {
     LOG(INFO) << "force engine be: " << caffe2::FLAGS_engine;
-    for (const auto& op : net_def.op()) {
-      const_cast<caffe2::OperatorDef*>(&op)->set_engine(caffe2::FLAGS_engine);
+    if (caffe2::FLAGS_engine == "opengl") {
+      caffe2::NetDef opengl_net_def;
+
+      if (caffe2::tryConvertToOpenGL(init_net_def, net_def, &opengl_net_def)) {
+        net_def = opengl_net_def;
+        if (caffe2::FLAGS_run_individual) {
+          caffe2::FLAGS_run_individual = false;
+          LOG(INFO)
+            << "OpenGL implementation does not support individual operator delay. Run net delay only";
+        } else {
+          LOG(ERROR)
+            << "Net cannot be converted to OpenGL format, use original model instead";
+        }
+      } else {
+        for (const auto& op : net_def.op()) {
+          const_cast<caffe2::OperatorDef*>(&op)->set_engine(caffe2::FLAGS_engine);
+        }
+      }
     }
   }
+
   if (caffe2::FLAGS_force_algo) {
     LOG(INFO) << "force algo be: " << caffe2::FLAGS_algo;
     for (const auto& op : net_def.op()) {
