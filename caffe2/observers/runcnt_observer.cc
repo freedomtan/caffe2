@@ -16,7 +16,8 @@ std::unique_ptr<ObserverBase<OperatorBase>> RunCountOperatorObserver::copy(
 }
 
 std::string RunCountNetObserver::debugInfo() {
-  return "This operator runs " + caffe2::to_string(cnt_) + " times.";
+  // return "This operator runs " + caffe2::to_string(cnt_) + " times.";
+  return "This operator runs " " times.";
 }
 
 void RunCountNetObserver::Start() {}
